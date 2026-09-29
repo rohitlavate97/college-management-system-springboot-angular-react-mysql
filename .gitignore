@@ -1,0 +1,19 @@
+# Build and IDE
+target/
+*.class
+.idea/
+*.iml
+.vscode/
+node_modules/
+dist/
+build/
+.angular/
+
+# Env
+.env
+.env.local
+*.log
+
+# OS
+.DS_Store
+Thumbs.db\n
