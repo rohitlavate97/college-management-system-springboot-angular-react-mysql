@@ -30,19 +30,33 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationPreferenceRepository preferenceRepository;
     private final UserRepository userRepository;
     private final NotificationMapper notificationMapper;
+    private final RealtimeNotificationPublisher realtimePublisher;
 
     @Override
     @Transactional
     public void sendNotification(SendNotificationRequest request) {
         if (request.getUserId() != null) {
-            sendToUser(request.getUserId(), request);
+            Notification notification = saveNotificationForUser(request.getUserId(), request);
+            if (notification != null) {
+                realtimePublisher.sendToUser(notification.getUser().getUsername(), notificationMapper.toNotificationResponse(notification));
+            }
         } else {
             List<User> users = userRepository.findAll();
-            users.forEach(user -> sendToUser(user.getId(), request));
+            users.forEach(user -> saveNotificationForUser(user.getId(), request));
+            
+            // Generate a dummy notification for broadcast
+            Notification dummy = new Notification();
+            dummy.setTitle(request.getTitle());
+            dummy.setMessage(request.getMessage());
+            dummy.setType(request.getType());
+            dummy.setReferenceType(request.getReferenceType());
+            dummy.setReferenceId(request.getReferenceId());
+            dummy.setCreatedAt(java.time.LocalDateTime.now());
+            realtimePublisher.broadcastNotification(notificationMapper.toNotificationResponse(dummy));
         }
     }
 
-    private void sendToUser(Long userId, SendNotificationRequest request) {
+    private Notification saveNotificationForUser(Long userId, SendNotificationRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -50,7 +64,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .orElse(null);
 
         if (preference != null && !preference.getInAppEnabled()) {
-            return;
+            return null;
         }
 
         Notification notification = new Notification();
@@ -62,7 +76,7 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setReferenceId(request.getReferenceId());
         notification.setIsRead(false);
         
-        notificationRepository.save(notification);
+        return notificationRepository.save(notification);
     }
 
     @Override
