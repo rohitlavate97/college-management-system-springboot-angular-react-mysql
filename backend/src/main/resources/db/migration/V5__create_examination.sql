@@ -28,6 +28,8 @@ CREATE TABLE exam_subjects (
     max_marks DECIMAL(5,2) NOT NULL,
     passing_marks DECIMAL(5,2) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT uk_exam_subjects UNIQUE (examination_id, subject_id),
     CONSTRAINT fk_exam_subjects_examination FOREIGN KEY (examination_id) REFERENCES examinations(id) ON DELETE CASCADE,
     CONSTRAINT fk_exam_subjects_subject FOREIGN KEY (subject_id) REFERENCES subjects(id)
@@ -58,6 +60,7 @@ CREATE TABLE results (
     published_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT uk_results UNIQUE (student_id, exam_subject_id),
     CONSTRAINT fk_results_student FOREIGN KEY (student_id) REFERENCES students(id),
     CONSTRAINT fk_results_exam_subject FOREIGN KEY (exam_subject_id) REFERENCES exam_subjects(id),
