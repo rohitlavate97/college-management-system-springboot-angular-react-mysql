@@ -119,7 +119,6 @@
             <scope>test</scope>
         </dependency>
         
-        <!-- Future capabilities
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
@@ -128,7 +127,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
-        -->
     </dependencies>
 
     <build>

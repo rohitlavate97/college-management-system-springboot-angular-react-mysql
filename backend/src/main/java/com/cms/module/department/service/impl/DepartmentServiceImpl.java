@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +37,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "departments", allEntries = true)
     public DepartmentResponse createDepartment(DepartmentRequest request) {
         log.info("Creating department with code: {}", request.getCode());
         
@@ -60,6 +63,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "departments", key = "'id_' + #id")
     public DepartmentResponse getDepartmentById(Long id) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department", "id", id));
@@ -68,6 +72,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "departments", key = "'code_' + #code")
     public DepartmentResponse getDepartmentByCode(String code) {
         Department department = departmentRepository.findByCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Department", "code", code));
@@ -156,6 +161,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "departments", allEntries = true)
     public DepartmentResponse updateDepartment(Long id, DepartmentRequest request) {
         log.info("Updating department with id: {}", id);
         Department department = departmentRepository.findById(id)
@@ -182,6 +188,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "departments", allEntries = true)
     public void deleteDepartment(Long id) {
         log.info("Deleting department with id: {}", id);
         Department department = departmentRepository.findById(id)
@@ -191,6 +198,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "departments", allEntries = true)
     public void toggleDepartmentStatus(Long id) {
         log.info("Toggling active status for department with id: {}", id);
         Department department = departmentRepository.findById(id)

@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,7 @@ public class CollegeServiceImpl implements CollegeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "colleges", allEntries = true)
     public CollegeResponse createCollege(CollegeRequest request) {
         log.info("Creating college with code: {}", request.getCode());
         if (collegeRepository.existsByCode(request.getCode())) {
@@ -55,6 +58,7 @@ public class CollegeServiceImpl implements CollegeService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "colleges", key = "'id_' + #id")
     public CollegeResponse getCollegeById(Long id) {
         College college = collegeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("College", "id", id));
@@ -63,6 +67,7 @@ public class CollegeServiceImpl implements CollegeService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "colleges", key = "'code_' + #code")
     public CollegeResponse getCollegeByCode(String code) {
         College college = collegeRepository.findByCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("College", "code", code));
@@ -111,6 +116,7 @@ public class CollegeServiceImpl implements CollegeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "colleges", allEntries = true)
     public CollegeResponse updateCollege(Long id, CollegeRequest request) {
         log.info("Updating college with id: {}", id);
         College college = collegeRepository.findById(id)
@@ -130,6 +136,7 @@ public class CollegeServiceImpl implements CollegeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "colleges", allEntries = true)
     public void deleteCollege(Long id) {
         log.info("Deleting college with id: {}", id);
         College college = collegeRepository.findById(id)
@@ -139,6 +146,7 @@ public class CollegeServiceImpl implements CollegeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "colleges", allEntries = true)
     public void toggleCollegeStatus(Long id) {
         log.info("Toggling active status for college with id: {}", id);
         College college = collegeRepository.findById(id)
