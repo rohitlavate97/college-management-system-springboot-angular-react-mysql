@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -31,24 +32,28 @@ public class CollegeController {
     private final CollegeService collegeService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Create a new college")
     public ResponseEntity<CollegeResponse> createCollege(@Valid @RequestBody CollegeRequest request) {
         return new ResponseEntity<>(collegeService.createCollege(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Get a college by ID")
     public ResponseEntity<CollegeResponse> getCollegeById(@PathVariable Long id) {
         return ResponseEntity.ok(collegeService.getCollegeById(id));
     }
 
     @GetMapping("/code/{code}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Get a college by Code")
     public ResponseEntity<CollegeResponse> getCollegeByCode(@PathVariable String code) {
         return ResponseEntity.ok(collegeService.getCollegeByCode(code));
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Get all colleges with pagination")
     public ResponseEntity<PageResponse<CollegeSummaryResponse>> getAllColleges(
             @RequestParam(defaultValue = "0") int page,
@@ -59,6 +64,7 @@ public class CollegeController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Search colleges by name or code")
     public ResponseEntity<PageResponse<CollegeSummaryResponse>> searchColleges(
             @RequestParam String query,
@@ -68,12 +74,14 @@ public class CollegeController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Update an existing college")
     public ResponseEntity<CollegeResponse> updateCollege(@PathVariable Long id, @Valid @RequestBody CollegeRequest request) {
         return ResponseEntity.ok(collegeService.updateCollege(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Delete a college")
     public ResponseEntity<Void> deleteCollege(@PathVariable Long id) {
         collegeService.deleteCollege(id);
@@ -81,6 +89,7 @@ public class CollegeController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Toggle active status of a college")
     public ResponseEntity<Void> toggleCollegeStatus(@PathVariable Long id) {
         collegeService.toggleCollegeStatus(id);

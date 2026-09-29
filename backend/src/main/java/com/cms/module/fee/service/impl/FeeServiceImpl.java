@@ -23,6 +23,8 @@ import com.cms.module.fee.repository.PaymentRepository;
 import com.cms.module.fee.service.FeeService;
 import com.cms.module.student.entity.Student;
 import com.cms.module.student.repository.StudentRepository;
+import com.cms.exception.BusinessException;
+import com.cms.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +54,7 @@ public class FeeServiceImpl implements FeeService {
     @Transactional
     public FeeStructureResponse createFeeStructure(FeeStructureRequest request) {
         Course course = courseRepository.findById(request.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + request.getCourseId()));
         
         FeeStructure feeStructure = feeStructureMapper.toEntity(request);
         feeStructure.setCourse(course);
@@ -71,16 +73,16 @@ public class FeeServiceImpl implements FeeService {
     @Transactional
     public List<FeeInvoiceResponse> generateFeeInvoices(FeeInvoiceRequest request) {
         FeeStructure feeStructure = feeStructureRepository.findById(request.getFeeStructureId())
-                .orElseThrow(() -> new RuntimeException("Fee structure not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Fee structure not found with id: " + request.getFeeStructureId()));
         
         List<Student> students = new ArrayList<>();
         if (request.getStudentId() != null) {
             students.add(studentRepository.findById(request.getStudentId())
-                    .orElseThrow(() -> new RuntimeException("Student not found")));
+                    .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + request.getStudentId())));
         } else if (request.getCourseId() != null) {
             students.addAll(studentRepository.findAllByCourseId(request.getCourseId()));
         } else {
-            throw new RuntimeException("Must specify studentId or courseId");
+            throw new BusinessException("Must specify studentId or courseId");
         }
         
         List<FeeInvoice> invoices = new ArrayList<>();
@@ -91,6 +93,12 @@ public class FeeServiceImpl implements FeeService {
             invoice.setInvoiceNumber("INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             invoice.setTotalAmount(feeStructure.getAmount());
             if (request.getDiscountAmount() != null) {
+                if (request.getDiscountAmount().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new BusinessException("Discount amount cannot be negative");
+                }
+                if (request.getDiscountAmount().compareTo(feeStructure.getAmount()) > 0) {
+                    throw new BusinessException("Discount cannot exceed fee structure amount");
+                }
                 invoice.setDiscountAmount(request.getDiscountAmount());
             }
             invoice.setDueDate(feeStructure.getDueDate() != null ? feeStructure.getDueDate() : LocalDate.now().plusDays(30));
@@ -113,13 +121,21 @@ public class FeeServiceImpl implements FeeService {
     @Transactional
     public PaymentResponse processPayment(PaymentRequest request) {
         FeeInvoice invoice = feeInvoiceRepository.findById(request.getInvoiceId())
-                .orElseThrow(() -> new RuntimeException("Invoice not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found with id: " + request.getInvoiceId()));
+
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("Payment amount must be greater than zero");
+        }
         
         BigDecimal payableAmount = invoice.getTotalAmount().subtract(invoice.getDiscountAmount());
         BigDecimal remainingAmount = payableAmount.subtract(invoice.getPaidAmount());
+
+        if (remainingAmount.compareTo(BigDecimal.ZERO) <= 0 || invoice.getStatus() == InvoiceStatus.PAID) {
+            throw new BusinessException("Invoice is already fully paid");
+        }
         
         if (request.getAmount().compareTo(remainingAmount) > 0) {
-            throw new RuntimeException("Payment amount exceeds remaining balance");
+            throw new BusinessException("Payment amount exceeds remaining balance");
         }
         
         Payment payment = new Payment();
@@ -148,7 +164,7 @@ public class FeeServiceImpl implements FeeService {
     @Override
     public PaymentResponse getPaymentByReceipt(String receiptNumber) {
         Payment payment = paymentRepository.findByReceiptNumber(receiptNumber)
-                .orElseThrow(() -> new RuntimeException("Payment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with receipt number: " + receiptNumber));
         return paymentMapper.toResponse(payment);
     }
 

@@ -45,7 +45,7 @@ public class StudentController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR') or (hasRole('STUDENT') and @securityService.isOwner(#id))")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR') or (hasRole('STUDENT') and @securityService.isStudentOwner(#id))")
     @Operation(summary = "Get student by ID")
     public ResponseEntity<StudentResponse> getStudentById(@PathVariable Long id) {
         return ResponseEntity.ok(studentService.getStudentById(id));
@@ -124,7 +124,7 @@ public class StudentController {
     }
 
     @GetMapping("/{id}/enrollments")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR') or (hasRole('STUDENT') and @securityService.isOwner(#id))")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR') or (hasRole('STUDENT') and @securityService.isStudentOwner(#id))")
     @Operation(summary = "Get all enrollments for a student")
     public ResponseEntity<List<EnrollmentResponse>> getStudentEnrollments(@PathVariable Long id) {
         return ResponseEntity.ok(studentService.getStudentEnrollments(id));

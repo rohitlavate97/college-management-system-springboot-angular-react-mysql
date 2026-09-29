@@ -25,6 +25,8 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     Page<Student> findByStatus(StudentStatus status, Pageable pageable);
 
+    Optional<Student> findByUserId(Long userId);
+
     @Query("SELECT s FROM Student s JOIN s.user u WHERE " +
            "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +

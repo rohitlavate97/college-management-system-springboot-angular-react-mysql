@@ -46,7 +46,7 @@ public class ResultController {
     }
 
     @GetMapping("/students/{studentId}/examinations/{examinationId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD') or (hasRole('STUDENT') and @securityService.isStudentOwner(#studentId))")
     @Operation(summary = "Get student report card for specific examination")
     public ResponseEntity<StudentReportCardResponse> getStudentReportCard(
             @PathVariable Long studentId,
@@ -55,7 +55,7 @@ public class ResultController {
     }
 
     @GetMapping("/students/{studentId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD') or (hasRole('STUDENT') and @securityService.isStudentOwner(#studentId))")
     @Operation(summary = "Get all report cards for student")
     public ResponseEntity<List<StudentReportCardResponse>> getStudentAllReportCards(@PathVariable Long studentId) {
         return ResponseEntity.ok(resultService.getStudentAllReportCards(studentId));

@@ -35,7 +35,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/student/{studentId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'PROFESSOR') or (hasRole('STUDENT') and @securityService.isStudentOwner(#studentId))")
     @Operation(summary = "Get student attendance", description = "Get attendance records for a specific student with pagination")
     public ResponseEntity<Page<AttendanceResponse>> getStudentAttendance(
             @PathVariable Long studentId,
@@ -44,7 +44,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/subject/{subjectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'PROFESSOR')")
     @Operation(summary = "Get subject attendance", description = "Get attendance records for a specific subject and date")
     public ResponseEntity<List<AttendanceResponse>> getSubjectAttendance(
             @PathVariable Long subjectId,
@@ -53,7 +53,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/student/{studentId}/stats")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'PROFESSOR') or (hasRole('STUDENT') and @securityService.isStudentOwner(#studentId))")
     @Operation(summary = "Get student attendance statistics", description = "Get overall attendance stats or stats for a specific subject if subjectId is provided")
     public ResponseEntity<AttendanceStatsResponse> getStudentStats(
             @PathVariable Long studentId,

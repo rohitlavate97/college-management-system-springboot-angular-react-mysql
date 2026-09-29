@@ -49,28 +49,28 @@ public class FeeController {
     }
 
     @GetMapping("/invoices/student/{studentId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT') or (hasRole('STUDENT') and @securityService.isStudentOwner(#studentId))")
     @Operation(summary = "Get all fee invoices for a student")
     public ResponseEntity<List<FeeInvoiceResponse>> getStudentInvoices(@PathVariable Long studentId) {
         return ResponseEntity.ok(feeService.getStudentInvoices(studentId));
     }
 
     @PostMapping("/payments")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT') or (hasRole('STUDENT') and @securityService.isInvoiceOwner(#request.invoiceId))")
     @Operation(summary = "Process a payment")
     public ResponseEntity<PaymentResponse> processPayment(@Valid @RequestBody PaymentRequest request) {
         return new ResponseEntity<>(feeService.processPayment(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/payments/receipt/{receiptNumber}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT') or (hasRole('STUDENT') and @securityService.isPaymentOwner(#receiptNumber))")
     @Operation(summary = "Get payment by receipt number")
     public ResponseEntity<PaymentResponse> getPaymentByReceipt(@PathVariable String receiptNumber) {
         return ResponseEntity.ok(feeService.getPaymentByReceipt(receiptNumber));
     }
 
     @GetMapping("/student/{studentId}/summary")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT') or (hasRole('STUDENT') and @securityService.isStudentOwner(#studentId))")
     @Operation(summary = "Get fee summary for a student")
     public ResponseEntity<StudentFeeSummaryResponse> getStudentFeeSummary(@PathVariable Long studentId) {
         return ResponseEntity.ok(feeService.getStudentFeeSummary(studentId));

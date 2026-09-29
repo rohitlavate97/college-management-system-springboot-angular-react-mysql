@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -33,24 +34,28 @@ public class DepartmentController {
     private final DepartmentService departmentService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Create a new department")
     public ResponseEntity<DepartmentResponse> createDepartment(@Valid @RequestBody DepartmentRequest request) {
         return new ResponseEntity<>(departmentService.createDepartment(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Get a department by ID")
     public ResponseEntity<DepartmentResponse> getDepartmentById(@PathVariable Long id) {
         return ResponseEntity.ok(departmentService.getDepartmentById(id));
     }
 
     @GetMapping("/code/{code}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Get a department by Code")
     public ResponseEntity<DepartmentResponse> getDepartmentByCode(@PathVariable String code) {
         return ResponseEntity.ok(departmentService.getDepartmentByCode(code));
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Get all departments with pagination")
     public ResponseEntity<PageResponse<DepartmentSummaryResponse>> getAllDepartments(
             @RequestParam(defaultValue = "0") int page,
@@ -61,6 +66,7 @@ public class DepartmentController {
     }
 
     @GetMapping("/college/{collegeId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Get departments by College ID with pagination")
     public ResponseEntity<PageResponse<DepartmentSummaryResponse>> getDepartmentsByCollege(
             @PathVariable Long collegeId,
@@ -72,12 +78,14 @@ public class DepartmentController {
     }
 
     @GetMapping("/college/{collegeId}/active")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Get active departments by College ID without pagination")
     public ResponseEntity<List<DepartmentSummaryResponse>> getActiveDepartmentsByCollege(@PathVariable Long collegeId) {
         return ResponseEntity.ok(departmentService.getActiveDepartmentsByCollege(collegeId));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HOD', 'PROFESSOR', 'STUDENT')")
     @Operation(summary = "Search departments by name or code")
     public ResponseEntity<PageResponse<DepartmentSummaryResponse>> searchDepartments(
             @RequestParam String query,
@@ -87,12 +95,14 @@ public class DepartmentController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Update an existing department")
     public ResponseEntity<DepartmentResponse> updateDepartment(@PathVariable Long id, @Valid @RequestBody DepartmentRequest request) {
         return ResponseEntity.ok(departmentService.updateDepartment(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Delete a department")
     public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
         departmentService.deleteDepartment(id);
@@ -100,6 +110,7 @@ public class DepartmentController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Toggle active status of a department")
     public ResponseEntity<Void> toggleDepartmentStatus(@PathVariable Long id) {
         departmentService.toggleDepartmentStatus(id);
