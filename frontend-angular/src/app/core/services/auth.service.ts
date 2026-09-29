@@ -1,51 +1,103 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
+import { Observable, tap, catchError, of } from 'rxjs';
+import { LoginRequest, AuthResponse, UserProfile } from '../models/models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly TOKEN_KEY = 'auth_token';
-  private readonly USER_ROLE_KEY = 'user_role';
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  private apiUrl = '/api/v1/auth';
 
-  currentUser = signal<any>(null);
+  currentUser = signal<UserProfile | null>(null);
+  currentRoles = signal<string[]>([]);
 
-  constructor(private http: HttpClient, private router: Router) {
-    this.loadUser();
+  constructor() {
+    this.checkStoredToken();
   }
 
-  login(credentials: any) {
-    return this.http.post<any>('/api/v1/auth/login', credentials).pipe(
-      tap(res => {
-        localStorage.setItem(this.TOKEN_KEY, res.token);
-        localStorage.setItem(this.USER_ROLE_KEY, res.role);
-        this.currentUser.set({ role: res.role, username: credentials.username });
-        this.router.navigate(['/dashboard']);
+  private checkStoredToken(): void {
+    const token = this.getToken();
+    if (token) {
+      this.http.get<UserProfile>(`${this.apiUrl}/me`).pipe(
+        catchError(() => {
+          this.logout();
+          return of(null);
+        })
+      ).subscribe(user => {
+        if (user) {
+          this.currentUser.set(user);
+          this.currentRoles.set(user.roles || []);
+        }
+      });
+    }
+  }
+
+  login(credentials: LoginRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
+      tap(response => {
+        this.storeTokens(response);
+        this.currentRoles.set(response.roles || []);
+        this.http.get<UserProfile>(`${this.apiUrl}/me`).subscribe(user => {
+            this.currentUser.set(user);
+        });
       })
     );
   }
 
-  logout() {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_ROLE_KEY);
-    this.currentUser.set(null);
-    this.router.navigate(['/login']);
+  logout(): void {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (refreshToken) {
+      this.http.post(`${this.apiUrl}/logout`, { refreshToken }).pipe(
+        catchError(() => of(null))
+      ).subscribe(() => {
+        this.clearStorage();
+        this.router.navigate(['/login']);
+      });
+    } else {
+      this.clearStorage();
+      this.router.navigate(['/login']);
+    }
   }
 
-  getToken() {
-    return localStorage.getItem(this.TOKEN_KEY);
+  refreshToken(): Observable<AuthResponse> {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      return of({} as AuthResponse);
+    }
+    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh-token`, { refreshToken }).pipe(
+      tap(response => this.storeTokens(response))
+    );
+  }
+
+  private storeTokens(response: AuthResponse): void {
+    localStorage.setItem('accessToken', response.accessToken);
+    localStorage.setItem('refreshToken', response.refreshToken);
+  }
+
+  private clearStorage(): void {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    this.currentUser.set(null);
+    this.currentRoles.set([]);
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('accessToken');
   }
 
   isAuthenticated(): boolean {
     return !!this.getToken();
   }
 
-  private loadUser() {
-    if (this.isAuthenticated()) {
-      const role = localStorage.getItem(this.USER_ROLE_KEY) || 'USER';
-      this.currentUser.set({ role, username: 'User' });
-    }
+  hasRole(role: string): boolean {
+    return this.currentRoles().includes(role);
+  }
+
+  hasAnyRole(roles: string[]): boolean {
+    return roles.some(role => this.hasRole(role));
   }
 }
