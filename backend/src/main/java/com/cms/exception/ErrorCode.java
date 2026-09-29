@@ -1,0 +1,11 @@
+package com.cms.exception;
+
+public enum ErrorCode {
+    RESOURCE_NOT_FOUND,
+    DUPLICATE_RESOURCE,
+    VALIDATION_ERROR,
+    UNAUTHORIZED,
+    FORBIDDEN,
+    INTERNAL_SERVER_ERROR,
+    BUSINESS_ERROR
+}
