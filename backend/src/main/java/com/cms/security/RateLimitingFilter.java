@@ -45,7 +45,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        if ("/api/v1/auth/login".equalsIgnoreCase(path) && "POST".equalsIgnoreCase(request.getMethod())) {
+        boolean isAuthEndpoint = ("/api/v1/auth/login".equalsIgnoreCase(path) || "/api/v1/auth/refresh-token".equalsIgnoreCase(path));
+        if (isAuthEndpoint && "POST".equalsIgnoreCase(request.getMethod())) {
             String clientIp = getClientIp(request);
             long now = Instant.now().toEpochMilli();
 
