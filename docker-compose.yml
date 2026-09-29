@@ -1,0 +1,95 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: cms-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-cms_db}
+      MYSQL_USER: ${DB_USER:-cms_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-cms_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cms-network
+
+  redis:
+    image: redis:alpine
+    container_name: cms-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cms-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cms-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${DB_NAME:-cms_db}?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cms_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cms_pass}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-mysecretkeythatneedstobelongenoughtobesecure_256bits}
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cms-network
+
+  frontend-react:
+    build:
+      context: ./frontend-react
+      dockerfile: Dockerfile
+    container_name: cms-react
+    networks:
+      - cms-network
+
+  frontend-angular:
+    build:
+      context: ./frontend-angular
+      dockerfile: Dockerfile
+    container_name: cms-angular
+    networks:
+      - cms-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: cms-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend-react
+      - frontend-angular
+    networks:
+      - cms-network
+
+volumes:
+  mysql-data:
+  redis-data:
+
+networks:
+  cms-network:
+    driver: bridge
